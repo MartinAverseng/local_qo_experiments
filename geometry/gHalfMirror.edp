@@ -1,0 +1,81 @@
+NewMacro BuildMeshHalfMirror()
+
+
+real a1 = a/2;
+real a2 = a;
+
+border b1(t=0,pi){x = Rtr*cos(t); y = Rtr*sin(t); label=ltr;};
+
+border b21(t=0,1){x = -Rtr + t*(Rtr - Rpml); y = 0; label = symS;};
+border b22(t=0,1){x = -Rpml + t*(Rpml - Rfar); y = 0; label = symS;};
+border b23(t=0,1){x = -Rfar + t*(Rfar - Rnear); y = 0; label = symS;};
+border b24(t=0,1){x = -Rnear + t*(Rnear - (L/2+b/2)); y = 0; label = symS;};
+
+border b31(t=0,1){x = -L/2-b/2; y = a1/2*t; label=lobj;};
+border b32(t=pi,0){x=-L/2 + b/2*cos(t); y = a1/2+b/2*sin(t); label = lobj;};
+border b33(t=0,1){x=-L/2+b/2; y=a1/2*(1-t); label = lobj;};
+
+border b4(t=-1,1){x = (L/2-b/2)*t; y = 0; label = symS;};
+
+border b51(t=0,1){x = L/2-b/2; y = a2/2*t; label=lobj;};
+border b52(t=pi,0){x=L/2 + b/2*cos(t); y = a2/2+b/2*sin(t); label = lobj;};
+border b53(t=0,1){x=L/2+b/2; y=a2/2*(1-t); label = lobj;};
+
+border b61(t=0,1){x = (L/2+b/2) + t*(Rnear-(L/2+b/2)); y = 0; label = symS;};
+border b62(t=0,1){x = Rnear + t*(Rfar - Rnear); y = 0; label = symS;};
+border b63(t=0,1){x = Rfar + t*(Rpml - Rfar); y = 0; label = symS;};
+border b64(t=0,1){x = Rpml + t*(Rtr - Rpml); y = 0; label = symS;};
+
+border b7(t=0,pi){x = Rpml*cos(t); y = Rpml*sin(t); label=lpml;};
+border b8(t=0,pi){x = Rfar*cos(t); y = Rfar*sin(t); label=lfar;};
+border b9(t=0,pi){x = Rnear*cos(t); y = Rnear*sin(t); label=lnear;};
+
+real l1 = pi*Rtr;
+real l21 = Rtr-Rpml;
+real l22 = Rpml - Rfar;
+real l23 = Rfar - Rnear;
+real l24 = Rnear - (L/2+b/2);
+real l31 = a1/2;
+real l32 = pi*b/2;
+real l33 = a1/2;
+real l4 = L-b;
+real l51 = a2/2;
+real l52 = pi*b/2;
+real l53 = a2/2;
+real l61 = l24;
+real l62 = l23;
+real l63 = l22;
+real l64 = l21;
+real l7 = pi*Rpml;
+real l8 = pi*Rfar;
+real l9 = pi*Rnear;
+
+int n1 = ceil(l1*n);
+int n21 = ceil(l21*n);
+int n22 = ceil(l22*n);
+int n23 = ceil(l23*n);
+int n24 = ceil(l24*n);
+int n31 = ceil(l31*n);
+int n32 = ceil(l32*n);
+int n33 = ceil(l33*n);
+int n4 = ceil(l4*n);
+int n51 = ceil(l51*n);
+int n52 = ceil(l52*n);
+int n53 = ceil(l53*n);
+int n61 = ceil(l61*n);
+int n62 = ceil(l62*n);
+int n63 = ceil(l63*n);
+int n64 = ceil(l64*n);
+int n7 = ceil(l7*n);
+int n8 = ceil(l8*n);
+int n9 = ceil(l9*n);
+
+Th = buildmesh(b1(n1)
++ b21(n21) + b22(n22) + b23(n23) + b24(n24)
++ b31(n31) + b32(n32) + b33(n33)
++ b4(n4)
++ b51(n51) + b52(n52) + b53(n53)
++ b61(n61) + b62(n62) + b63(n63) + b64(n64)
++ b7(n7) + b8(n8) + b9(n9));
+
+EndMacro

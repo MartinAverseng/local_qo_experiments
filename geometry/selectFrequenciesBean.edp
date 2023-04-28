@@ -1,0 +1,99 @@
+NewMacro selectFrequenciesBean()
+
+int Ncatalog = 8;
+
+
+
+real[int] nso(Ncatalog);
+nso = [12.927855478133115,
+24.737878178129755,
+36.579133656077296,
+48.427504429586726,
+60.278617353454472,
+72.131074027795194,
+83.984288836938489,
+95.837973314606714];
+
+
+real[int] nse(Ncatalog);
+nse = [7.126709175054381,
+18.824755012458699,
+30.657056013327487,
+42.502824253999592,
+54.352835443229139,
+66.204724522188783,
+78.057608931133331,
+89.911084292005825];
+
+
+real[int] nsall(2*Ncatalog);
+nsall = [7.126709175054381,
+12.927855478133115,
+18.824755012458699,
+24.737878178129755,
+30.657056013327487,
+36.579133656077296,
+42.502824253999592,
+48.427504429586726,
+54.352835443229139,
+60.278617353454472,
+66.204724522188783,
+72.131074027795194,
+78.057608931133331,
+83.984288836938489,
+89.911084292005825,
+95.837973314606714];
+
+if (meshChoice == 6){
+  Ncatalog = 2*Ncatalog;
+}
+
+real[int] ns(Ncatalog);
+
+for (int nf = 0; nf < Ncatalog; nf++){
+  if (meshChoice==6){
+    ns[nf] = nsall[nf];
+  }else{
+    if (symChoice==1){
+      ns[nf] = nse[nf];
+    }
+    else{
+      ns[nf] = nso[nf];
+    }
+  }
+}
+
+
+
+func int idMinFreq(){
+  int count = 0;
+  for (int nf = 0; nf < Ncatalog; nf++){
+    if (ns[nf] < minFrequency){
+      count++;
+    }
+  }
+  return count;
+}
+
+func int idMaxFreq(){
+  int count = -1;
+  for (int nf = 0; nf < Ncatalog-1; nf++){
+    if (ns[nf] <= maxFrequency){
+      count++;
+    }
+  }
+  return count;
+}
+
+int i1 = idMinFreq();
+int i2 = idMaxFreq();
+
+nFreq = i2 - i1 + 1;
+
+for (int nf = 0; nf < nFreq; nf++){
+  ks[nf] = ns[nf+i1];
+}
+
+
+
+EndMacro

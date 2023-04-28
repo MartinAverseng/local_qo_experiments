@@ -1,0 +1,219 @@
+// Import FreeFem libraries
+load "qf11to25"
+load "Element_P3"
+load "Element_P4"
+load "iovtk"
+load "medit"
+// Include FreeFem Macros
+include "ffddm.idp"
+include "ffmatlib/release-v2.0/demos/ffmatlib.idp"
+
+
+// Include custom Macros
+include "utils/commonDefs.edp"; // some convenient definitions
+include "utils/solveParallelFFDDM.edp"; // The parallel DDM solver
+include "utils/syncFEM.edp"; // Synchronize FEM solutions from processors
+include "sources/manufacturedSource.edp";
+
+int geoChoice = 4;
+// 1 : no obstacle
+// 2 : one wall
+// 3 : mirrors
+// 4 : cavity.
+func Pk = P1;
+func Pkref = P2;
+int p = 2;
+real k = 50; // Declare k
+real k0 = k;
+real M = 1;
+real Cthres = 0.5;
+real h = defh(k,k0,p,M,Cthres);
+
+real thetaInc = 0;
+int splitRef = 1;
+string id = "slush_vs_bae";
+
+
+real R0 = 0.1;
+real AA = 5;
+func xS = x/R0;
+func yS = y/R0;
+func xSh = x/R0;
+func ySh = y/R0;
+
+Rtr = 1.5;
+Rpml = 1.2;
+
+func finc = exp(1i*k*(cos(thetaInc)*x + sin(thetaInc)*y));
+func dxfinc = 1i*k*cos(thetaInc)*finc;
+func dyfinc = 1i*k*sin(thetaInc)*finc;
+func Deltafinc = -k^2*finc;
+func bumpSourcex = abs(xS) < 1 ? exp(AA*xS^2./(xS^2 - 1)) : 0;
+func bumpSourcey = abs(yS) < 1 ? exp(AA*yS^2./(yS^2 - 1)) : 0;
+func bumpSource = bumpSourcex*bumpSourcey;
+
+
+func bumpSourcexh = abs(xSh) < 1 ? exp(AA*xSh^2./(xSh^2 - 1)) : 0;
+func bumpSourceyh = abs(ySh) < 1 ? exp(AA*ySh^2./(ySh^2 - 1)) : 0;
+func bumpSourceh = bumpSourcexh*bumpSourceyh;
+
+func dxSbumpSourcex = abs(xS) < 1 ? -2*AA*xS/(xS^2 - 1)^2*exp(AA*xS^2./(xS^2 - 1)) : 0;
+func dySbumpSourcey = abs(yS) < 1 ? -2*AA*yS/(yS^2 - 1)^2*exp(AA*yS^2./(yS^2 - 1)) : 0;
+func dxbumpSource = 1/R0*dxSbumpSourcex*bumpSourcey;
+func dybumpSource = 1/R0*bumpSourcex*dySbumpSourcey;
+func dxSxSbumpSourcex = abs(xS) < 1 ? 2*AA*exp(AA*xS^2./(xS^2 - 1))*(2*(AA - 1)*xS^2 + 3*xS^4 - 1)/(1 - xS^2)^4 : 0;
+func dySySbumpSourcey = abs(yS) < 1 ? 2*AA*exp(AA*yS^2./(yS^2 - 1))*(2*(AA - 1)*yS^2 + 3*yS^4 - 1)/(1 - yS^2)^4 : 0;
+func DeltaBumpSource = 1/R0^2*(dxSxSbumpSourcex*bumpSourcey + dySySbumpSourcey*bumpSourcex);
+
+// Source term
+func fL2 = k^2*bumpSource*finc + finc*DeltaBumpSource + 2*dxfinc*dxbumpSource + 2*dyfinc*dybumpSource + Deltafinc*bumpSource;
+// Exact solution
+func uex = bumpSource*finc;
+
+
+border btr(t=0,2*pi){x = Rtr*cos(t); y = Rtr*sin(t); label = ltr;};
+border bpml(t=0,2*pi){x = Rpml*cos(t); y = Rpml*sin(t); label = lpml;};
+
+real Ntr = ceil(2*pi*Rtr/h);
+real Npml = ceil(2*pi*Rpml/h);
+
+
+mesh Th;
+if (geoChoice == 1){
+  Th = buildmesh(btr(Ntr) + bpml(Npml));
+} else if (geoChoice == 2) {
+  real a = 0.4;
+  real b = 0.2;
+  real L = 0.6;
+
+  border bEW(t=0,1){x = L/2 - b/2; y = -a/2 + a*t; label = lobj;};
+  border bEN(t=pi,0){x = L/2 + b/2*cos(t); y = a/2 + b/2*sin(t); label = lobj;};
+  border bEE(t=0,1){x = L/2 + b/2; y = a/2 - a*t; label = lobj;};
+  border bES(t=0,pi){x = L/2 + b/2*cos(-t); y = -a/2 - b/2*sin(t); label = lobj;};
+
+  int Ntr = ceil(2*pi*Rtr/h);
+  int Npml = ceil(2*pi*Rpml/h);
+  int N1 = ceil(a/h);
+  int N2 = ceil(pi*b/2/h);
+
+  Th = buildmesh(btr(Ntr) + bpml(Npml) + bEW(N1) + bEN(N2) + bEE(N1)+bES(N2));
+} else if (geoChoice == 3){
+  real a = 0.6;
+  real b = 0.2;
+  real L = 0.8;
+  // int nn = ceil(k/pi*(L-b));
+  // k = nn*pi/(L-b);
+  // k0 = k;
+  // h = defh(k,k0,p,M,Cthres);
+  border bWW(t=0,1){x =  -L/2 - b/2; y = -a/2 + a*t; label = lobj;};
+  border bWN(t=pi,0){x = -L/2 + b/2*cos(t); y = a/2 + b/2*sin(t); label = lobj;};
+  border bWE(t=0,1){x = -L/2 + b/2; y = a/2 - a*t; label = lobj;};
+  border bWS(t=0,pi){x = -L/2 + b/2*cos(-t); y = -a/2 - b/2*sin(t); label = lobj;};
+
+
+  border bEW(t=0,1){x =  L/2 - b/2; y = -a/2 + a*t; label = lobj;};
+  border bEN(t=pi,0){x = L/2 + b/2*cos(t); y = a/2 + b/2*sin(t); label = lobj;};
+  border bEE(t=0,1){x = L/2 + b/2; y = a/2 - a*t; label = lobj;};
+  border bES(t=0,pi){x = L/2 + b/2*cos(-t); y = -a/2 - b/2*sin(t); label = lobj;};
+
+
+  real Ntr = ceil(2*pi*Rtr/h);
+  real Npml = ceil(2*pi*Rpml/h);
+  real N1 = ceil(a/h);
+  real N2 = ceil(pi*b/2/h);
+
+  Th = buildmesh(btr(Ntr) + bpml(Npml) + bWW(N1) + bWN(N2) + bWE(N1)+bWS(N2)+ bEW(N1) + bEN(N2) + bEE(N1)+bES(N2));
+} else {
+
+  real L = 0.7;
+  real b = 0.17;
+  real thetam = pi/2 - pi/6; // = pi/3;
+  real xC = L/2*cos(thetam);
+  real yC = L*sin(thetam);
+
+  real x1Ruler = (L/2-b/2)*cos(thetam);
+  real x2Ruler = (L/2+b/2)*cos(thetam);
+  real y1Ruler =  2*(L/2-b/2)*sin(thetam);
+  real y2Ruler =  2*(L/2+b/2)*sin(thetam);
+
+
+
+  border bE1(phi=-thetam,thetam){x = (L/2+b/2)*cos(phi); y = 2*(L/2+b/2)*sin(phi); label=lobj;};
+  border bE2(phi=thetam,thetam+pi){x = xC + b/2*cos(phi); y=yC + 2*b/2*sin(phi); label=lobj;};
+
+  // border bE2(t = 0,1){x = x1Ruler + t*(x2Ruler - x1Ruler);
+  //    y = y1Ruler + t*(y2Ruler - y1Ruler); label = lobj;};
+  border bE3(phi =thetam,-thetam){x = (L/2-b/2)*cos(phi); y = 2*(L/2-b/2)*sin(phi);label = lobj;};
+  border bE4(phi=thetam,thetam+pi){x = xC + b/2*cos(phi); y=-yC -2*b/2*sin(phi); label=lobj;};
+
+  border bW1(phi=-thetam,thetam){x = -(L/2+b/2)*cos(phi); y = 2*(L/2+b/2)*sin(phi); label=lobj;};
+  border bW2(phi=thetam,thetam+pi){x = -xC - b/2*cos(phi); y=yC + 2*b/2*sin(phi); label=lobj;};
+  border bW3(phi =thetam,-thetam){x = -(L/2-b/2)*cos(phi); y = 2*(L/2-b/2)*sin(phi);label = lobj;};
+  border bW4(phi=thetam,thetam+pi){x = -xC - b/2*cos(phi); y=-yC -2*b/2*sin(phi); label=lobj;};
+
+// plot(bE1(10) + bE2bis(10),wait = 1);
+
+  real Ltr = Rtr*2*pi;
+
+  real Lpml = Rpml*2*pi;
+
+  real lE1 = 2*0.633551;
+  real lE2 = 0.41157;
+  real lE3 =  2*0.385955;
+  real lE4 = 0.41157;
+
+  int Ntr = ceil(Ltr/h);
+  int Npml = ceil(Lpml/h);
+
+  int NE1 = -ceil(lE1/h);
+  int NE2 = -ceil(lE2/h);
+  int NE3 = -ceil(lE3/h);
+  int NE4 = ceil(lE4/h);
+
+  int NW1 = ceil(lE1/h);
+  int NW2 = ceil(lE2/h);
+  int NW3 = ceil(lE3/h);
+  int NW4 = -ceil(lE4/h);
+
+
+  Th = buildmesh(btr(Ntr) + bpml(Npml)
+  + bE1(NE1) + bE2(NE2) + bE3(NE3) + bE4(NE4)
+  + bW1(NW1) + bW2(NW2) + bW3(NW3) + bW4(NW4));
+
+  // if (k==50){
+  //   k = 48.427504429586726;
+  // } else if (k ==75){
+  //   k = 78.057608931133331;
+  // } else if (k == 100){
+  //   k = 95.837973314606714;
+  // }
+}
+
+print("k = " + k);
+print("hk = " + h*k);
+Th = adaptmesh(Th,h,IsMetric=1,nbvx=ceil(200/h^2));
+// plot(Th);
+int dom = Th(0,0).region;
+int pml = Th((Rpml+Rtr)/2,0).region;
+mesh Thref = Th;
+
+fespace VhExport(Thref,P2);
+
+DefPML;
+solveFFDDM;
+
+// Sanity check.
+real erri = int2d(MThi,qforder=qfO)(abs(uref -uex)^2*MDP1[mpirank]);
+real err = 0;
+mpiReduce(erri,err,processor(0),mpiSUM);
+print("total L2 error = " +  sqrt(err));
+
+syncFEM;
+
+VhExport<complex> FEMErrorExp = ugref(x,y);
+
+if (mpirank == 0){
+  savemesh(Thref,id + "/export_mesh_g" + geoChoice + "_k_" + k + ".msh" );
+  ffSaveVh(Thref,VhExport,id + "/export_vh_g" + geoChoice + "_k_" + k + ".txt");
+  ffSaveData(FEMErrorExp,id + "/export_data_g" + geoChoice + "_k_" + k + ".txt" );
+}

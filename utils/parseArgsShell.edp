@@ -1,0 +1,51 @@
+NewMacro parseArgsShell()
+
+string id = getARGV("-ID","rawResults/results");
+// Folder name to store results
+
+string fileName = id + "/results.txt";
+
+// Declare all input parameters with a default value. Not all values are useful.
+int meshChoice = getARGV("-mC",1); // 1 for mirror, 2 for bean
+int symChoice = getARGV("-sym",1); // 1 for odd, 2 for even.
+
+// Geometric parameters
+real x0c = getARGV("-xC",0.);
+real y0c = getARGV("-yC",0.);
+
+
+real a = getARGV("-aval",0.5); // Large side of rectangles (or stadii)
+real b = getARGV("-bval",0.2); // Small side of rectangles
+real L = getARGV("-Lval",1.); // Distance between centers of North and South rectangles
+real RadDisk = getARGV("-radDiskVal",0.5); // Radius of the Disk
+real sideSquare = getARGV("-sideS",0.8); // side of the square
+
+int freqSet = getARGV("-freqSet",1);
+real inf = getARGV("-inputFreq",10.);
+// 1: bad frequencies for the 4 rectangles == 4 stadii
+// 2: in between bad frequencies (i.e. of freqSet 1)
+// 3: linearly increasing frequencies: 5, 10, 15, ...
+
+real minFrequency = getARGV("-minFreq",1.);
+real maxFrequency = getARGV("-maxFreq",10.);
+// Do not try to compute for larger frequencies than maxFrequency
+
+
+real k0 =getARGV("-k0",1.);
+// choice of frequency origin, so that hk = 1 for k = k0 for current choice of parameters.
+
+real nInc = getARGV("-nInc",4.);
+// Angle of incidence of the plane wave, so that theta = pi/nInc.
+real thetaInc = pi/nInc;
+
+real Cthres = getARGV("-Ct",1.);
+real M = getARGV("-M",1.);
+// Values in the formulat k^M(hk)^p <= C for the choice of h
+
+int splitRef = getARGV("-sp",1);
+// Number of splittings of the mesh for the reference solution computation
+int plotSol = getARGV("-plot",0);
+// turn on/off plots
+int plotNoPML = getARGV("-plotNoPML",1);
+
+EndMacro

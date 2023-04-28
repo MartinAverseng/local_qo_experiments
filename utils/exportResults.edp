@@ -1,0 +1,22 @@
+NewMacro exportResults()
+
+if (mpirank == 0){
+  ofstream dataFile(fileName,append);
+  dataFile.precision(8);
+  dataFile << h << ",";
+  dataFile << k << ",";
+  dataFile << errl2dom2 << ",";
+  dataFile << errl2near2 << ",";
+  dataFile << errl2far2 << ",";
+  dataFile << errH1dom2 << ","; // ||u - uh||_{L^2(dom)}
+  dataFile << errH1near2 << ","; // ||u - uh||_{H^1_k(near)}
+  dataFile << errH1far2 << ","; // ||u - uh||_{H^1_k(far)}
+  dataFile << normH1kdom2 << ",";
+  dataFile << normH1knear2 << ",";
+  dataFile << normH1kfar2 << ",";
+  dataFile << normPsidom << ",";
+  dataFile << normf2 << ";";
+  dataFile << endl;
+}
+
+EndMacro

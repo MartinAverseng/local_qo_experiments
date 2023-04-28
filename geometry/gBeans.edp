@@ -1,0 +1,54 @@
+NewMacro buildMeshBeans()
+
+
+
+L = 0.7;
+b = 0.17;
+real thetam = pi/2 - pi/4;
+real xC = L/2*cos(thetam);
+real yC = L*sin(thetam);
+
+
+border btr(t=0,2*pi){x = Rtr*cos(t); y=Rtr*sin(t); label=ltr;};
+border bpml(t = 0,2*pi){x = Rpml*cos(t); y=Rpml*sin(t); label=lpml;};
+
+border bE1(phi=-thetam,thetam){x = (L/2+b/2)*cos(phi); y = 2*(L/2+b/2)*sin(phi); label=lobj;};
+border bE2(phi=thetam,thetam+pi){x = xC + b/2*cos(phi); y=yC + 2*b/2*sin(phi); label=lobj;};
+border bE3(phi =thetam,-thetam){x = (L/2-b/2)*cos(phi); y = 2*(L/2-b/2)*sin(phi);label = lobj;};
+border bE4(phi=thetam,thetam+pi){x = xC + b/2*cos(phi); y=-yC -2*b/2*sin(phi); label=lobj;};
+
+border bW1(phi=-thetam,thetam){x = -(L/2+b/2)*cos(phi); y = 2*(L/2+b/2)*sin(phi); label=lobj;};
+border bW2(phi=thetam,thetam+pi){x = -xC - b/2*cos(phi); y=yC + 2*b/2*sin(phi); label=lobj;};
+border bW3(phi =thetam,-thetam){x = -(L/2-b/2)*cos(phi); y = 2*(L/2-b/2)*sin(phi);label = lobj;};
+border bW4(phi=thetam,thetam+pi){x = -xC - b/2*cos(phi); y=-yC -2*b/2*sin(phi); label=lobj;};
+
+
+
+real Ltr = Rtr*2*pi;
+
+real Lpml = Rpml*2*pi;
+
+real lE1 = 2*0.633551;
+real lE2 = 0.41157;
+real lE3 =  2*0.385955;
+real lE4 = 0.41157;
+
+int Ntr = ceil(Ltr*n);
+int Npml = ceil(Lpml*n);
+
+int NE1 = -ceil(lE1*n);
+int NE2 = -ceil(lE2*n);
+int NE3 = -ceil(lE3*n);
+int NE4 = ceil(lE4*n);
+
+int NW1 = ceil(lE1*n);
+int NW2 = ceil(lE2*n);
+int NW3 = ceil(lE3*n);
+int NW4 = -ceil(lE4*n);
+
+
+Th = buildmesh(btr(Ntr) + bpml(Npml)
++ bE1(NE1) + bE2(NE2) + bE3(NE3) + bE4(NE4)
++ bW1(NW1) + bW2(NW2) + bW3(NW3) + bW4(NW4));
+
+EndMacro

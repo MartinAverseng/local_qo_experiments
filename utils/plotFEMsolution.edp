@@ -1,0 +1,12 @@
+NewMacro plotFEMref()
+
+Uhref<complex> ugref;
+PBfromVhi(uref[],Uhref,ugref[]);
+mesh ThrefNoPML = trunc(Thref,r<=Rpml,split=1);
+fespace Vhref(ThrefNoPML,Pkref);
+Vhref ugrefNoPML = real(ugref);
+if (mpirank == 0){
+  plot(ugrefNoPML,dim=2,wait=1,fill = 1,cmm="FEM reference solution");
+}
+
+EndMacro

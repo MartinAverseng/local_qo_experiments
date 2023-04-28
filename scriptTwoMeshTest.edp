@@ -1,0 +1,175 @@
+// Import FreeFem libraries
+load "qf11to25"
+load "Element_P3"
+load "Element_P4"
+load "iovtk"
+// load "medit"
+// Include FreeFem Macros
+include "ffddm.idp"
+include "ffmatlib/release-v2.0/demos/ffmatlib.idp"
+// Include custom Macros
+include "utils/commonDefs.edp"; // some convenient definitions
+include "utils/solveParallelFFDDM.edp"; // The parallel DDM solver
+include "utils/syncFEM.edp"; // Synchronize FEM solutions from processors
+include "sources/manufacturedSource.edp";
+include "sources/defChiOut.edp"
+
+defChiOut(chi1,dxChi1,dyChi1,DeltaChi1,0.8,1.2)
+
+
+string id = "twoMeshTest";
+string ss = "h1h2";
+
+real k = 50;
+func Pk = P4;
+int p = 4;
+real k0 = k;
+real M = 1;
+real Cthres = 0.02;
+real h1 = defh(k,k,p,M,10);
+real h2 = defh(k,k0,p,M,Cthres);
+// real h2 = h1;
+// real h1 = h2;
+real h3 = sqrt(h1*h2);
+
+real a = 0.1;
+
+
+int l1 = 1;
+int l2 = 2;
+int l3 = 3;
+int l4 = 4;
+int l5 = 5;
+int l6 = 6;
+int l7 = 7;
+int l8 = 8;
+int l9 = 9;
+int l10 = 10;
+
+border b1(t=0,1){x = 0; y=t; label=l1;};
+border b2(t=0,1){x=t; y=1;label=l2;};
+border b3(t=0,1){x=1; y=1-t;label=l3;};
+border b4(t=0,1){x=1-t;y=0;label=l4;};
+border b5(t=0,1){x=1+a*t;y=0;label=l5;};
+border b6(t=0,1){x=1+a+t;y=0;label=l6;};
+border b7(t=0,1){x=2+a;y=t;label=l7;};
+border b8(t=0,1){x=2+a-t;y=1;label=l8;};
+border b9(t=0,1){x=1+a-a*t;y=1;label=l9;};
+border b10(t=0,1){x=1+a;y=1-t;label=l10;};
+
+int Nh1 = ceil(1/h1);
+int Nh2 = ceil(1/h2);
+int Nh3 = ceil(a/h3);
+
+mesh Th = buildmesh(
+  b1(-Nh1)+
+  b2(-Nh1)+
+  b3(Nh1)+
+  b4(-Nh1)+
+  b5(Nh3)+
+  b6(Nh2)+
+  b7(Nh2)+
+  b8(Nh2)+
+  b9(Nh3)+
+  b10(Nh2));
+
+// plot(Th);
+int fine = Th(1.5+0.5*a,0.5).region;
+int coarse = Th(0.5,0.5).region;
+
+mesh Thexport = trunc(Th,1,split=1);
+
+
+cout << "k = " + k << endl;
+cout << "h1k = " + h1*k << endl;
+cout << "h2k = " + h2*k << endl;
+cout << "h3k = " + h3*k << endl;
+real thetaInc = pi/2;
+func finc = exp(1i*k*(cos(thetaInc)*x + sin(thetaInc)*y));
+func dxfinc = 1i*k*cos(thetaInc)*finc;
+func dyfinc = 1i*k*sin(thetaInc)*finc;
+
+
+fespace Vh(Th,Pk);
+fespace Uh(Th,Pk);
+
+
+macro VarfH(varfName, meshName, PhName)
+varf varfName(u,v) =
+int2d(meshName,qforder=qfO)(dx(u)*dx(v) + dy(u)*dy(v) - k^2*u*v)
+- int1d(meshName,b1,qforder=qfO)(1i*k*u*v)
+- int1d(meshName,b2,qforder=qfO)(1i*k*u*v)
+- int1d(meshName,b4,qforder=qfO)(1i*k*u*v)
+- int1d(meshName,b5,qforder=qfO)(1i*k*u*v)
+- int1d(meshName,b6,qforder=qfO)(1i*k*u*v)
+- int1d(meshName,b7,qforder=qfO)(1i*k*u*v)
+- int1d(meshName,b8,qforder=qfO)(1i*k*u*v)
+- int1d(meshName,b9,qforder=qfO)(1i*k*u*v)
+- int1d(meshName,b1,qforder=qfO)(1i*k*(-cos(thetaInc)-1)*finc*v)
+- int1d(meshName,b2,qforder=qfO)(1i*k*(sin(thetaInc)-1)*v*finc)
+- int1d(meshName,b4,qforder=qfO)(1i*k*(-sin(thetaInc)-1)*v*finc)
+- int1d(meshName,b5,qforder=qfO)(1i*k*(-sin(thetaInc)-1)*v*finc)
+- int1d(meshName,b6,qforder=qfO)(1i*k*(-sin(thetaInc)-1)*v*finc)
+- int1d(meshName,b7,qforder=qfO)(1i*k*(cos(thetaInc)-1)*v*finc)
+- int1d(meshName,b8,qforder=qfO)(1i*k*(sin(thetaInc)-1)*v*finc)
+- int1d(meshName,b9,qforder=qfO)(1i*k*(sin(thetaInc)-1)*v*finc); // EOM
+// for the preconditioner
+
+macro VarfOpt(varfName, meshName, PhName)
+varf varfName(u,v) =
+int2d(meshName,qforder=qfO)(dx(u)*dx(v) + dy(u)*dy(v) - k^2*u*v)
+- int1d(meshName,b1,qforder=qfO)(1i*k*u*v)
+- int1d(meshName,b2,qforder=qfO)(1i*k*u*v)
+- int1d(meshName,b4,qforder=qfO)(1i*k*u*v)
+- int1d(meshName,b5,qforder=qfO)(1i*k*u*v)
+- int1d(meshName,b6,qforder=qfO)(1i*k*u*v)
+- int1d(meshName,b7,qforder=qfO)(1i*k*u*v)
+- int1d(meshName,b8,qforder=qfO)(1i*k*u*v)
+- int1d(meshName,b9,qforder=qfO)(1i*k*u*v)
+- int1d(meshName,b1,qforder=qfO)(1i*k*(-cos(thetaInc)-1)*finc*v)
+- int1d(meshName,b2,qforder=qfO)(1i*k*(sin(thetaInc)-1)*v*finc)
+- int1d(meshName,b4,qforder=qfO)(1i*k*(-sin(thetaInc)-1)*v*finc)
+- int1d(meshName,b5,qforder=qfO)(1i*k*(-sin(thetaInc)-1)*v*finc)
+- int1d(meshName,b6,qforder=qfO)(1i*k*(-sin(thetaInc)-1)*v*finc)
+- int1d(meshName,b7,qforder=qfO)(1i*k*(cos(thetaInc)-1)*v*finc)
+- int1d(meshName,b8,qforder=qfO)(1i*k*(sin(thetaInc)-1)*v*finc)
+- int1d(meshName,b9,qforder=qfO)(1i*k*(sin(thetaInc)-1)*v*finc)
+- int1d(meshName,ffddminterfacelabel)(1i*k*u*v);
+//EOM
+
+vsym = 0;
+vtgv = -1;
+vtgvelim = -1;
+ffddmbuildDmesh(M,Th,mpiCommWorld)
+ffddmbuildDfespace(Fe,M,complex,def,init,Pk)
+ffddmsetupOperator(PB,Fe,VarfH);
+FeVhi<complex> ui, rhsi, x0i;
+x0i = 0;
+ffddmbuildrhs(PB,VarfH,rhsi[])
+ffddmsetup(PB,Fe,VarfH,VarfOpt)
+ffddmset(PB,verbosity,1);
+
+print("Solving scattering problem...");
+ui[] = PBfGMRES(x0i[], rhsi[], 1.e-8, 500, "right");
+print("Done !");
+ui=-ui;
+Uh<complex> ug; // g for global
+PBfromVhi(ui[],Uh,ug[]);
+
+Vh ugr = real(ug);
+plot(ugr,cmm="Real(u)");
+Vh Regerr = real(ug-finc);
+plot(Regerr,fill= 1,value=1,cmm="Real error");
+Vh absgerr = abs(ug-finc);
+plot(absgerr,fill= 1,value=1,cmm="Avs error");
+Vh logRegErr = log(1e-12 + abs(real(ug-finc)))/log(10.);
+plot(logRegErr,fill= 1,value=1,cmm="Log abs real error",wait=1);
+
+
+fespace VhExport(Thexport,P2);
+VhExport<complex>data = ug(x,y);
+
+
+savemesh(Thexport,id + "/export_mesh" + "_k_" + k + ss + ".msh" );
+ffSaveVh(Thexport,VhExport,id + "/export_vh" + "_k_" + k + ss + ".txt");
+ffSaveData(data,id + "/export_data" + "_k_" + k + ss + ".txt" );

@@ -1,0 +1,14 @@
+NewMacro DefSourcePlaneWave()
+// Plane wave incidence
+// Reformulated as L2 source problem
+
+
+real J = k;
+print("J = "+J);
+func finc = exp(1i*J*(x*cos(thetaInc) + y*sin(thetaInc)));
+func dxfinc = 1i*J*cos(thetaInc)*finc;
+func dyfinc = 1i*J*sin(thetaInc)*finc;
+func fL2 = DeltaChi1*finc + 2*(dxChi1*dxfinc + dyChi1*dyfinc);
+// func gL2 = DeltaChi*finc + 2*(dxchiOut*dxfinc + dychiOut*dyfinc)
+// - J^2*finc*chiOut + k^2*finc*chiOut;
+EndMacro

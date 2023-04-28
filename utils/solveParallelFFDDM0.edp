@@ -1,0 +1,66 @@
+
+NewMacro solveFFDDM()
+
+  fespace Uh(Th,Pk);
+  fespace Uhref(Thref,Pkref);
+
+  macro VarfH(varfName, meshName, PhName)
+  varf varfName(u,v) =
+  intN(meshName,dom,qforder=qfO)(Grad(u)'*Grad(v)-k^2*u*v)
+  + intN(meshName,away,qforder=qfO)(Grad(u)'*Grad(v)-k^2*u*v)
+  + intN(meshName,pml,qforder=qfO)(detJ*(S1(u)*S1(v)+S2(u)*S2(v) - k^2*u*v))
+  - intN(meshName,away,qforder=qfO)(fL2*v)
+  + on(lobj,u=0)
+  + on(ltr,u=0); // EOM
+  // for the preconditioner
+  macro VarfOpt(varfName, meshName, PhName)
+  varf varfName(u,v) =
+  intN(meshName,dom,qforder=qfO)(Grad(u)'*Grad(v)-k^2*u*v)
+  + intN(meshName,away,qforder=qfO)(Grad(u)'*Grad(v)-k^2*u*v)
+  + intN(meshName,pml,qforder=qfO)(detJ*(S1(u)*S1(v)+S2(u)*S2(v) - k^2*u*v))
+  - intbN(meshName,ffddminterfacelabel)(1i*k*sqrt(detJ)*u*v)
+  + on(lobj, u=0)
+  + on(ltr, u=0); // EOM
+
+
+  vsym = 0;
+  vtgv = 1.e30;
+  vtgvelim = 1.e30;
+
+  ffddmbuildDmeshNested(M,Th,splitRef,mpiCommWorld)
+
+  ffddmbuildDfespace(FeCoarse,MCoarse,complex,def,init,Pk)
+  ffddmbuildDfespace(Fe,M,complex,def,init,Pkref)
+
+  ffddmsetupOperator(PBCoarse,FeCoarse,VarfH)
+  ffddmsetupOperator(PB,Fe,VarfH)
+
+
+  ffddmset(PBCoarse,verbosity,1);
+  ffddmset(PB,verbosity,1);
+
+
+  // ffddmsetup(PB,Fe,VarfH,VarfOpt)
+  // ffddmsetup(PBCoarse,FeCoarse,VarfH,VarfOpt)
+
+  ffddmsetupPrecond(PBCoarse,VarfOpt)
+  ffddmsetupPrecond(PB,VarfOpt)
+
+
+  ffddmcoarsemeshsetup(PB,Th,VarfH,VarfH)
+
+
+  FeCoarseVhi<complex> u, rhs, x0;
+  FeVhi<complex> uref, rhsref, x0ref;
+
+  ffddmbuildrhs(PBCoarse,VarfH,rhs[]);
+  ffddmbuildrhs(PB,VarfH,rhsref[]);
+
+  x0 = 0;
+  x0ref = 0;
+
+  print("Solving scattering problem...");
+  u[] = PBCoarsefGMRES(x0[], rhs[], 1.e-6, 100, "right");
+  uref[] = PBfGMRES(x0ref[], rhsref[], 1.e-6, 20, "right");
+  print("Done !");
+EndMacro

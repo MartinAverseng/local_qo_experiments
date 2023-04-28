@@ -1,0 +1,89 @@
+NewMacro BuildMeshQuarterMirror()
+
+// x and y are reversed and negative Ns, because first attempt
+// had a horizontal stadium instead of vertical, and x <--> y was the quickest fix.
+
+xC = a/2;
+yC = L/2;
+
+// West boundary (must be decomposed into 4 segments)
+border b11(t=0,1){y = t*Rnear; x = 0; label = symW;};
+border b12(t=0,1){y = Rnear + t*(Rfar-Rnear); x = 0; label = symW;};
+border b13(t=0,1){y = Rfar + t*(Rpml-Rfar); x = 0; label = symW;};
+border b14(t=0,1){y = Rpml + t*(Rtr-Rpml); x = 0; label = symW;};
+
+// Outer boundary
+border b2(t=0,pi/2.){y=Rtr*cos(t); x = Rtr*sin(t);label=ltr;};
+
+// South boundary, with obstacle (must be decomposed into segments + obstacle boundary)
+border b31(t=0,1){y=0; x=Rtr+t*(-Rtr+Rpml); label=symS;};
+border b32(t=0,1){y=0; x=Rpml+t*(-Rpml+Rfar); label=symS;};
+border b33(t=0,1){y=0; x=Rfar+t*(-Rfar+Rnear); label=symS;};
+border b34(t=0,1){y=0; x=Rnear+t*(-Rnear+(L+b)/2); label=symS;};
+
+// Obstacle boundary
+border b41(t=0,1){y=a/2*t;x=(L+b)/2;label=lobj;};
+border b42(t=pi/2,-pi/2){y = xC + b/2*cos(t); x=yC + b/2*sin(t); label=lobj;};
+border b43(t=0,1){y=a/2*(1-t);x=(L-b)/2;label=lobj;};
+
+// Remainder of South boundary
+border b5(t=0,1){y=0; x=(L-b)/2*(1-t); label=symS;};
+
+// Inner circular arcs to be resolved by the mesh
+border b6(t=0,pi/2){y=Rnear*cos(t);x=Rnear*sin(t); label=lnear;};
+border b7(t=0,pi/2){y=Rfar*cos(t);x=Rfar*sin(t); label=lfar;};
+border b8(t=0,pi/2){y=Rpml*cos(t);x=Rpml*sin(t); label=lpml;};
+
+real l11 = Rnear;
+real l12 = Rfar-Rnear;
+real l13 = Rpml-Rfar;
+real l14 = Rtr-Rpml;
+
+real l2 = Rtr*pi/2;
+
+real l31 = Rtr-Rpml;
+real l32 = Rpml-Rfar;
+real l33 = Rfar - Rnear;
+real l34 = (Rnear-(L+b)/2);
+
+real l41 = a/2;
+real l42 = pi*b/2;
+real l43 = a/2;
+
+real l5 = (L-b)/2;
+
+real l6 = Rnear*pi/2;
+real l7 = Rfar*pi/2;
+real l8 = Rpml*pi/2;
+
+int N11 = -ceil(l11*n);
+int N12 = -ceil(l12*n);
+int N13 = -ceil(l13*n);
+int N14 = -ceil(l14*n);
+
+int N2 = -ceil(l2*n);
+
+int N31 = -ceil(l31*n);
+int N32 = -ceil(l32*n);
+int N33 = -ceil(l33*n);
+int N34 = -ceil(l34*n);
+
+int N41 = -ceil(l41*n);
+int N42 = -ceil(l42*n);
+int N43 = -ceil(l43*n);
+
+int N5 = -ceil(l5*n);
+
+int N6 = -ceil(l6*n);
+int N7 = -ceil(l7*n);
+int N8 = -ceil(l8*n);
+
+Th = buildmesh(b11(N11) + b12(N12) + b13(N13) + b14(N14)
++ b2(N2)
++ b31(N31) + b32(N32) + b33(N33) + b34(N34)
++ b41(N41) + b42(N42) + b43(N43)
++ b5(N5)
++ b6(N6) + b7(N7) + b8(N8));
+
+
+EndMacro

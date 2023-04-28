@@ -1,0 +1,60 @@
+// Common definitions
+
+
+// Global parameters: same over all experiments
+int qfO = 25; // Number of points of integration
+// Main parameters
+real Rnear = 0.8; // Radius of a disk containing the obstacle
+real Rfar = 0.9;
+real Rpml = 1.; // Radius of beginning of PML region
+real Rtr = 1.5; // Cutoff radius. (PML region = {Rpml <= r <= Rtr})
+// func Pk = P3; // FEM type (hard coded)
+// int p = 4; // polynomial degree of Pk (value 2 hard coded).
+// func Pkref = P4; // FEM type for reference solution. (hard coded)
+
+func real defh(real k, real k0, real p, real M, real Cthres){
+  real h = Cthres^(1./p)*k0^(M/p)*k^(-1-M/p); // So that k^M (hk)^p = k0^M*Cthres
+  // When Cthres = 1 and k = k0, hk = 1.
+  return h;
+}
+
+func r = sqrt(x^2 + y^2);
+
+// FFDDM
+macro dimension 2      // 2D
+macro intN()int2d      // two-dimensional integral
+macro intbN()int1d     // one-dimensional integral
+macro def(i)i          // scalar field definition
+macro init(i)i         // scalar field initialization
+macro Grad(u) [dx(u),dy(u)] // EOM
+macro print(message)
+if (mpirank == 0){
+  cout << message << endl;
+}
+// EOM
+
+
+macro DefPML
+real coef=5;
+func sigma = r>Rpml ? coef *(r-Rpml)^2/(Rtr-Rpml)^2 : 0;
+func sigmaI = r>Rpml ? coef *(r-Rpml)^3/(3*(Rtr-Rpml)^2) : 0;
+func s1 = 1 + 1i * sigma;
+func s2 = 1 + 1i * 1/r * sigmaI;
+func detJ = s1*s2;
+func Jm11 = 1/s2 + (1/s1-1/s2) * (x^2)/(x^2+y^2);
+func Jm12 =        (1/s1-1/s2) * (x*y)/(x^2+y^2);
+func Jm22 = 1/s2 + (1/s1-1/s2) * (y^2)/(x^2+y^2);
+//EOM
+
+macro S1(u) (Jm11*dx(u)+Jm12*dy(u)) // EOM
+macro S2(u) (Jm12*dx(u)+Jm22*dy(u)) // EOM
+
+
+int lpml = 1;
+int ltr = 2;
+int lobj = 3;
+int lnear = 4;
+int lfar = 5;
+
+int symS = 6;
+int symW = 7;

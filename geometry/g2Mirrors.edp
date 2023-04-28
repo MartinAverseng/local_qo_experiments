@@ -1,0 +1,35 @@
+NewMacro BuildMesh2Mirrors()
+
+
+
+// Left mirror
+border bWW(t=0,1){x = -L/2 - b/2; y = -a/2 + a*t; label = lobj;};
+border bWN(t=pi,0){x = -L/2 + b/2*cos(t); y = a/2 + b/2*sin(t); label = lobj;};
+border bWE(t=0,1){x = -L/2 + b/2; y = a/2 - a*t; label = lobj;};
+border bWS(t=0,pi){x = -L/2 + b/2*cos(-t); y = -a/2 - b/2*sin(t); label = lobj;};
+
+border bEW(t=0,1){x = L/2 - b/2; y = -a/2 + a*t; label = lobj;};
+border bEN(t=pi,0){x = L/2 + b/2*cos(t); y = a/2 + b/2*sin(t); label = lobj;};
+border bEE(t=0,1){x = L/2 + b/2; y = a/2 - a*t; label = lobj;};
+border bES(t=0,pi){x = L/2 + b/2*cos(-t); y = -a/2 - b/2*sin(t); label = lobj;};
+
+border bnear(t=0,2*pi){x = Rnear*cos(t); y = Rnear*sin(t); label = lnear;};
+border bfar(t=0,2*pi){x = Rfar*cos(t); y = Rfar*sin(t); label = lfar;};
+border bpml(t=0,2*pi){x = Rpml*cos(t); y = Rpml*sin(t); label = lpml;};
+border btr(t=0,2*pi){x = Rtr*cos(t); y = Rtr*sin(t); label = ltr;};
+
+
+int N1 = ceil(n*a);
+int N2 = ceil(n*pi*b/2);
+int Nnear = ceil(n*2*pi*Rnear);
+int Nfar = ceil(n*2*pi*Rfar);
+int Npml = ceil(n*2*pi*Rpml);
+int Ntr = ceil(n*2*pi*Rtr);
+
+Th = buildmesh(bWW(N1) + bWN(N2) + bWE(N1) + bWS(N2)
++ bEW(N1) + bEN(N2) + bEE(N1) + bES(N2)
++ bpml(Npml) + btr(Ntr));
+//+ bnear(Nnear) + bfar(Nfar)
+
+
+EndMacro

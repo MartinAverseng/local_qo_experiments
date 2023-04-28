@@ -1,0 +1,33 @@
+// A function which is 1 near and 0 far,
+NewMacro defChiOut(chiName,dxChiName,dyChiName,DeltaChiName,r1,r2)
+
+// real r1 = Rnear; // chi is 1 up to r1
+// real r2 = Rpml; // chi is 0 up to r2
+
+func uu#chiName = (r - r1)/(r2 - r1); // uu(x,y) = uu(r)
+real du#chiName = 1/(r2-r1); // du/dr
+func f#chiName = uu#chiName>0? exp(-1/uu#chiName) : 0; // f(uu) = exp(-1/uu)
+func g#chiName = uu#chiName<1? exp(-1/(1-uu#chiName)) : 0; // g(uu) f(1-uu)
+func chiName =  1 - f#chiName/(f#chiName+g#chiName) ; // chiOut(x,y) = chiOut(uu) = f/(f+g)
+
+func df#chiName = uu#chiName>0? exp(-1/uu#chiName)*1/uu#chiName^2 : 0; // df/du
+func ddf#chiName = uu#chiName>0? exp(-1/uu#chiName)*1/uu#chiName^4 - exp(-1/uu#chiName)*2/uu#chiName^3 : 0; //d^2f /d uu^2
+func dg#chiName = uu#chiName<1? -exp(-1/(1-uu#chiName))*1/(1-uu#chiName)^2 : 0; // dg/du
+func ddg#chiName = uu#chiName<1? exp(-1/(1-uu#chiName))*1/(1-uu#chiName)^4 - exp(-1/(1-uu#chiName))*2/(1-uu#chiName)^3 : 0; // d^2 g/d uu^2
+
+func dchiOut#chiName = -df#chiName/(f#chiName+g#chiName) + f#chiName/(f#chiName+g#chiName)^2*(df#chiName + dg#chiName); // d chiOut/ du
+func ddchiOut#chiName = -ddf#chiName/(f#chiName+g#chiName) // d^2 chiOut / d uu^2
++ 2*df#chiName/(f#chiName+g#chiName)^2*(df#chiName+dg#chiName)
++f#chiName/(f#chiName+g#chiName)^2*(ddf#chiName + ddg#chiName)
+-2*f#chiName/(f#chiName+g#chiName)^3*(df#chiName+dg#chiName)^2;
+
+func dxu#chiName = r> 0? x/r*1/(r2 - r1):0; // du/dx
+func dyu#chiName = r> 0? y/r*1/(r2 - r1):0;// du/dy
+
+func dxChiName = dchiOut#chiName*dxu#chiName; // d chiOut / dx
+func dyChiName = dchiOut#chiName*dyu#chiName; //d chiOut /dy
+
+
+func DeltaChiName = 1/r*dchiOut#chiName*du#chiName + ddchiOut#chiName*du#chiName^2; // Delta chiOut
+
+EndMacro

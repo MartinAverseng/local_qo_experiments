@@ -1,0 +1,85 @@
+NewMacro computeLocalErrors()
+
+
+
+// real rSing = 0.9*(L/2 - b/2);
+// func psiSing = (r < rSing)? exp(-rSing^2/(rSing^2 - r^2)) : 0;
+func psiSing = 1;
+// func psiSing = rC2 < (b/2*1.5)^2 ? 0 : 1;
+ 
+print("Interpolation on reference mesh")
+matrix I = interpolate(FeVhi,FeCoarseVhi);
+matrix<complex> Ic = I;
+FeVhi<complex> ei;
+ei[] = Ic*u[];
+ei[] -= uref[];
+
+
+print("Parallel error computation")
+real errl2domi2 = int2d(MThi,dom,qforder=qfO)(abs(ei)^2*MDP1[mpirank]*psiSing);
+real errl2neari2 = int2d(MThi,near,qforder=qfO)(abs(ei)^2*MDP1[mpirank]);
+real errl2fari2 = int2d(MThi,far,qforder=qfO)(abs(ei)^2*MDP1[mpirank]);
+
+
+real errH1domi2 = int2d(MThi,dom,qforder=qfO)((
+    abs(dx(ei))^2
+  + abs(dy(ei)^2))
+  *MDP1[mpirank]*psiSing);
+real errH1neari2 = int2d(MThi,near,qforder=qfO)((
+      abs(dx(ei))^2
+    + abs(dy(ei)^2))
+    *MDP1[mpirank]);
+real errH1fari2 = int2d(MThi,far,qforder=qfO)((
+      abs(dx(ei))^2
+    + abs(dy(ei)^2))
+    *MDP1[mpirank]);
+
+real normPsidomi = int2d(MThi,dom,qforder=qfO)(abs(psiSing)*MDP1[mpirank]);
+real normfi2 = int2d(MThi,dom,qforder=qfO)((abs(fL2)^2)*MDP1[mpirank])
++ int2d(MThi,far,qforder=qfO)((abs(fL2)^2)*MDP1[mpirank])
++ int2d(MThi,near,qforder=qfO)((abs(fL2)^2)*MDP1[mpirank]);
+real normH1kdomi2 = abs(int2d(MThi,dom,qforder=qfO)((abs(uref)^2
++ k^(-2)*(Grad(uref)'*Grad(uref)))*MDP1[mpirank]*psiSing));
+real normH1kneari2 = abs(int2d(MThi,near,qforder=qfO)((abs(uref)^2
++ k^(-2)*(Grad(uref)'*Grad(uref)))*MDP1[mpirank]));
+real normH1kfari2 = abs(int2d(MThi,far,qforder=qfO)((abs(uref)^2
++ k^(-2)*(Grad(uref)'*Grad(uref)))*MDP1[mpirank]));
+
+
+real errl2dom2 = 0;
+real errl2near2 = 0;
+real errl2far2 = 0;
+
+real errH1dom2 = 0;
+real errH1near2 = 0;
+real errH1far2 = 0;
+
+real normf2 = 0;
+
+real normH1kdom2 = 0;
+real normH1knear2 = 0;
+real normH1kfar2 = 0;
+
+real normPsidom = 0;
+
+print("Mpi reduction")
+mpiReduce(errl2domi2,errl2dom2,processor(0),mpiSUM);
+mpiReduce(errl2neari2,errl2near2,processor(0),mpiSUM);
+mpiReduce(errl2fari2,errl2far2,processor(0),mpiSUM);
+
+mpiReduce(errH1domi2,errH1dom2,processor(0),mpiSUM);
+mpiReduce(errH1neari2,errH1near2,processor(0),mpiSUM);
+mpiReduce(errH1fari2,errH1far2,processor(0),mpiSUM);
+
+mpiReduce(normH1kdomi2,normH1kdom2,processor(0),mpiSUM);
+mpiReduce(normH1kneari2,normH1knear2,processor(0),mpiSUM);
+mpiReduce(normH1kfari2,normH1kfar2,processor(0),mpiSUM);
+
+mpiReduce(normfi2,normf2,processor(0),mpiSUM);
+
+mpiReduce(normPsidomi,normPsidom,processor(0),mpiSUM);
+//
+
+
+
+EndMacro

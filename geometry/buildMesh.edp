@@ -1,0 +1,58 @@
+include "gQuarterMirror.edp"
+include "gHalfMirror.edp"
+include "gQuarterBean.edp"
+include "g2Mirrors.edp"
+include "gCircle.edp"
+include "gBeans.edp"
+
+NewMacro BuildMesh()
+
+real xC;
+real yC;
+
+int n = ceil(1./h);
+mesh Th;
+if (meshChoice == 1){
+  BuildMeshQuarterMirror;
+}
+if (meshChoice == 2){
+  BuildMeshQuarterBean;
+}
+if (meshChoice == 3){
+  BuildMeshHalfMirror;
+}
+if (meshChoice == 4){
+  BuildMesh2Mirrors;
+}
+real Rcircle;
+if (meshChoice == 5){
+  BuildMeshCircle;
+}
+if (meshChoice == 6){
+  buildMeshBeans;
+}
+
+// Define regions
+
+real radRegionPml = (Rpml + Rtr)/2;
+real radRegionFar = (Rfar + Rpml)/2;
+real radRegionNear = (Rnear + Rfar)/2;
+real radRegionDom = 0.05;
+if (meshChoice == 5){
+  radRegionDom = (Rcircle + Rnear)/2.;
+
+}
+
+
+Th = adaptmesh(Th,h,IsMetric=1,nbvx=ceil(100/h^2));
+
+int pml = Th(radRegionPml*cos(pi/4),radRegionPml*sin(pi/4)).region;
+int far = Th(radRegionFar*cos(pi/4),radRegionFar*sin(pi/4)).region;
+int near = Th(radRegionNear*cos(pi/4),radRegionNear*sin(pi/4)).region;
+int dom = Th(radRegionDom*cos(pi/4),radRegionDom*cos(pi/4)).region;
+
+
+mesh Thref = trunc(Th,1,split = splitRef);
+
+
+EndMacro

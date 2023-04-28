@@ -1,0 +1,9 @@
+NewMacro syncFEM()
+
+Uhref<complex> ugref; // g for global
+PBfromVhi(uref[],Uhref,ugref[]);
+//
+Uh<complex> ug; // g for global
+PBCoarsefromVhi(u[],Uh,ug[]);
+
+EndMacro

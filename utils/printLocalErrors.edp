@@ -1,0 +1,31 @@
+NewMacro printLocalErrors()
+
+real errl2ev2 =  errl2dom2 + errl2near2 + errl2far2;
+real errH1ev2 =  errH1dom2 + errH1near2 + errH1far2;
+
+real normH1kev2 = normH1kfar2 + normH1knear2 + normH1kdom2;
+
+real errH1kdom2 = errl2dom2^2 + k^(-2)*errH1dom2;
+real errH1knear2 =  errl2near2^2 + k^(-2)*errH1near2;
+real errH1kfar2 =  errl2far2^2 + k^(-2)*errH1far2;
+
+
+print("Absolute errors:")
+print("||u - uh||_{H^1_k(dom)}/||psi||_{L^2(dom)} = " + sqrt(errH1kdom2/normPsidom));
+print("||u - uh||_{H^1_k(near)}/||psi||_{L^2(near)} = " + sqrt(errH1knear2/(pi*(Rfar^2 - Rnear^2))));
+print("||u - uh||_{H^1_k(far)}/||psi||_{L^2(far)} = " + sqrt(errH1kfar2/(pi*(Rpml^2 - Rfar^2))));
+
+print("Relative errors:")
+print("||u - uh||_{H^1_k(dom)}/norm{u}_{H^1_k(dom)} = " + sqrt(errH1kdom2/normH1kdom2));
+print("||u - uh||_{H^1_k(near)}/norm{u}_{H^1_k(near)} = " + sqrt(errH1knear2/normH1knear2));
+print("||u - uh||_{H^1_k(far)}/norm{u}_{H^1_k(far)} = " + sqrt(errH1kfar2/normH1kfar2));
+
+print("Reference norm")
+print("||uref||_{H^1_k(dom)}/||psi||_{L^2(dom)} = " + sqrt(normH1kdom2/normPsidom));
+print("||uref||_{H^1_k(near)}/||psi||_{L^2(near)} = " + sqrt(normH1knear2/(pi*(Rfar^2 - Rnear^2))));
+print("||uref||_{H^1_k(far)}/||psi||_{L^2(far)} = " + sqrt(normH1kfar2/(pi*(Rpml^2 - Rfar^2))));
+
+print("norm H1k dom = " +sqrt(normH1kdom2));
+print("norm f L2 = " + sqrt(normf2))
+
+EndMacro

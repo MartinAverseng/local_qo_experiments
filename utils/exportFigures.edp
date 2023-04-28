@@ -1,0 +1,40 @@
+NewMacro exportFigures()
+Uhref<complex> ugref;
+Uh<complex> ug;
+PBfromVhi(uref[],Uhref,ugref[]);
+PBCoarsefromVhi(u[],Uh,ug[]);
+mesh ThrefNoPML = trunc(Thref,r<=Rpml,split=1);
+mesh ThNoPML = trunc(Th,r<=Rpml,split=1);
+fespace Vhref(ThrefNoPML,Pkref);
+fespace Vh(ThNoPML,Pk);
+Vhref ugrefNoPML = real(ugref - chiOut*fincSym + fincSym);
+Vh<complex> ug2 = ug;
+matrix I2 = interpolate(Vhref,Vh);
+matrix<complex> Ic2 = I2;
+Vhref<complex> ugInterp;
+ugInterp[] = Ic2*ug2[];
+// Vhref ugNoPML = real(ugInterp - chiOut*finc + finc);
+Vhref errorNoPML = abs(ugref - ugInterp);
+if (mpirank == 0){
+  int[int] Order = [1];
+  string fileNameFigError = id + "/error_k" + k + ".vtu";
+  string fileNameFigUref = id + "/Uref_k" + k + ".vtu";
+  string DataNameError = "Error";
+  string DataNameUref = "Reference solution";
+  // plot(ugrefNoPML,dim=2,wait=1);
+  // plot(ugNoPML,dim=2,wait=1);
+  // plot(errorNoPML,dim=2,wait=1);
+  savevtk(fileNameFigError, ThrefNoPML, errorNoPML, dataname=DataNameError, order=Order);
+  savevtk(fileNameFigUref, ThrefNoPML, ugrefNoPML, dataname=DataNameUref, order=Order);
+  // Vhref<complex> eg = ugref - ugInterp;
+  // real H1kev = sqrt(abs(int2d(ThrefNoPML,qforder=qfO)(abs(eg)^2 + k^(-2)*(Grad(eg)'*Grad(eg)))));
+  // cout << "H1kev Computed locally: " << H1kev << endl;
+  // real H1kaw = sqrt(abs(int2d(ThrefNoPML,away,qforder=qfO)(abs(eg)^2 + k^(-2)*(Grad(eg)'*Grad(eg)))));
+  // cout << "H1kev away locally: " << H1kaw << endl;
+  // savemesh(ThrefNoPML,id + "/Thref_k" + k + ".txt");
+  // ffSaveVh(ThrefNoPML,Vhref,id + "/Vhref_k" + k + ".txt");
+  // ffSaveData(errorNoPML,id + "/error_k" + k + ".txt");
+  // ffSaveData(ugrefNoPML,id + "/Uref_k" + k + ".txt");
+}
+
+EndMacro
